@@ -8,6 +8,7 @@ A simple tool to make any window borderless. Perfect for games and applications 
 - Simple and easy to use interface
 - Supports most Windows applications and games
 - Version controlled releases
+- Blacklist functionality for excluding applications
 
 ## Installation
 
@@ -19,7 +20,8 @@ A simple tool to make any window borderless. Perfect for games and applications 
 
 ### Prerequisites
 
-- Python 3.x
+- Python 3.13+
+- UV package installer (recommended)
 - Virtual environment (recommended)
 
 ### Setup Development Environment
@@ -28,12 +30,17 @@ A simple tool to make any window borderless. Perfect for games and applications 
 # Clone the repository
 git clone https://github.com/cherzlieb/py-borderless-games-and-apps
 
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv .venv
+
+# Activate virtual environment (Windows)
 .venv\Scripts\activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install UV (if not already installed)
+python -m pip install uv
+
+# Install dependencies using UV
+uv pip install -r requirements.txt
 ```
 
 ### Creating a Release
@@ -59,4 +66,8 @@ The script will:
 
 ## License
 
-MIT License
+[MIT License](LICENSE)
+
+## Requirements
+
+See [`pyproject.toml`](pyproject.toml ) for detailed dependencies.
