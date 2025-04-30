@@ -1,5 +1,6 @@
 import win32gui
 import win32con
+import win32api  # Füge diesen Import hinzu
 import tkinter as tk
 from tkinter import ttk
 import json
@@ -41,6 +42,10 @@ class BorderlessWindow:
         self.listbox = tk.Listbox(main_frame)
         self.listbox.pack(fill=tk.BOTH, expand=True)
 
+        # Füge Logging-Textfeld hinzu
+        self.log_text = tk.Text(main_frame, height=5)
+        self.log_text.pack(fill=tk.BOTH, padx=5, pady=5)
+
         # Frame für Hauptbuttons
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -74,7 +79,7 @@ class BorderlessWindow:
 
         # Button zum Entfernen aus der Blacklist
         remove_btn = ttk.Button(blacklist_button_frame, text="Von Blacklist entfernen",
-                             command=self.remove_from_blacklist)
+                             command=self.remove_from_blacklist, width=30)
         remove_btn.pack(side=tk.LEFT, padx=5)
 
         self.windows = {}
@@ -155,19 +160,71 @@ class BorderlessWindow:
     def make_borderless(self):
         selection = self.listbox.curselection()
         if not selection:
+            self.log("Kein Fenster ausgewählt!")
             return
 
-        title = self.listbox.get(selection[0])
-        hwnd = self.windows.get(title)
+        selected_text = self.listbox.get(selection[0])
+        # Suche das richtige Fenster basierend auf dem angezeigten Text
+        hwnd = None
+        for window_title, window_hwnd in self.windows.items():
+            display_title = window_title[:30] + ('...' if len(window_title) > 30 else '')
+            if f"{display_title}" in selected_text:
+                hwnd = window_hwnd
+                break
 
-        if hwnd:
-            # Entferne Fensterrahmen
+        if not hwnd:
+            self.log(f"Fenster nicht gefunden: {selected_text}")
+            return
+
+        self.log(f"Starte Vollbild-Modus für: {selected_text}")
+
+        try:
+            # Entferne alle Fenster-Styles
             style = win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
-            style = style & ~(win32con.WS_CAPTION | win32con.WS_THICKFRAME)
-            win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, style)
+            new_style = (style & ~(
+                win32con.WS_CAPTION |
+                win32con.WS_THICKFRAME |
+                win32con.WS_MINIMIZE |
+                win32con.WS_MAXIMIZE |
+                win32con.WS_SYSMENU |
+                win32con.WS_BORDER |
+                win32con.WS_DLGFRAME |
+                win32con.WS_OVERLAPPED
+            )) | win32con.WS_POPUP
 
-            # Maximiere das Fenster
-            win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+            # Hole Monitor-Informationen (geändert von win32gui zu win32api)
+            monitor = win32api.MonitorFromWindow(hwnd, win32con.MONITOR_DEFAULTTONEAREST)
+            monitor_info = win32api.GetMonitorInfo(monitor)
+            monitor_area = monitor_info['Monitor']
+
+            self.log(f"Monitor-Bereich: {monitor_area}")
+
+            # Setze Fenster auf volle Monitorgröße
+            win32gui.SetWindowPos(
+                hwnd,
+                win32con.HWND_TOP,
+                monitor_area[0], monitor_area[1],
+                monitor_area[2] - monitor_area[0],
+                monitor_area[3] - monitor_area[1],
+                win32con.SWP_FRAMECHANGED | win32con.SWP_SHOWWINDOW
+            )
+
+            self.log("Fensterposition wurde angepasst")
+            self.log("Vollbild-Modus wurde erfolgreich angewendet")
+
+        except Exception as e:
+            self.log(f"Fehler beim Anwenden des Vollbild-Modus: {str(e)}")
+            import traceback
+            self.log(traceback.format_exc())
+
+    def log(self, message):
+        """Fügt eine Nachricht zum Log-Textfeld hinzu"""
+        self.log_text.insert(tk.END, message + '\n')
+        self.log_text.see(tk.END)  # Scrollt automatisch nach unten
+
+    def clear_log(self):
+        """Löscht den Inhalt des Log-Textfelds"""
+        self.log_text.delete(1.0, tk.END)
 
 if __name__ == "__main__":
     app = BorderlessWindow()
