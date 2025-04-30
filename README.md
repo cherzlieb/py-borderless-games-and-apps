@@ -46,7 +46,7 @@ python scripts/create_release.py
 ```
 
 2. Choose version increment:
-- MAJOR: for incompatible API changes
+- MAJOR: for incompatible changes
 - MINOR: for adding functionality in a backward compatible manner
 - PATCH: for backward compatible bug fixes
 - Empty: keep current version
@@ -56,14 +56,6 @@ The script will:
 - Build the executable
 - Create a release package
 - Generate a ZIP file
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
 
 ## License
 
