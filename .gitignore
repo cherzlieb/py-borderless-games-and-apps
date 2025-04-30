@@ -154,3 +154,6 @@ logs/
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# Blacklist file
+blacklist.json
