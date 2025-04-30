@@ -145,7 +145,8 @@ class BorderlessWindow:
                         # Prüfe ob der Prozessname in der Blacklist ist
                         if not any(blocked.lower() == base_name for blocked in self.blacklist):
                             self.windows[title] = hwnd
-                            self.listbox.insert(tk.END, f"{title} ({process_name})")
+                            display_title = title[:30] + ('...' if len(title) > 30 else '')
+                            self.listbox.insert(tk.END, f"{display_title} ({process_name})")
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         pass
 
