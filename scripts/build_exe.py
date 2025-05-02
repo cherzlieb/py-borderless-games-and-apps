@@ -3,7 +3,7 @@ from pathlib import Path
 from release_version import VersionManager
 
 project_root = Path(__file__).parent.parent
-icon_path = project_root / "src" / "img" / "icon_32.ico"
+icon_path = project_root / "src" / "static" / "img" / "icon_32.ico"
 
 version_manager = VersionManager(project_root / "pyproject.toml")
 current_version = version_manager.load_version()
@@ -17,7 +17,7 @@ PyInstaller.__main__.run([
     '--noconsole',
     '--icon', str(icon_path),
     '--add-data', f'{str(project_root / "version.txt")};.',
-    '--add-data', f'{str(icon_path)};src/img',
+    '--add-data', f'{str(icon_path)};src/static/img',
     f'--distpath={str(project_root / "dist")}',
     '--noconfirm',
 ])
