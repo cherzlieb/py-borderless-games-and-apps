@@ -3,7 +3,7 @@ import shutil
 import glob
 
 def delete_files_with_pattern(pattern):
-    files = glob.glob(pattern)  # Sucht alle Dateien, die dem Muster entsprechen
+    files = glob.glob(pattern)  # search for files matching the pattern
     for file in files:
         try:
             os.remove(file)
@@ -11,7 +11,7 @@ def delete_files_with_pattern(pattern):
         except Exception as e:
             print(f"Fehler beim Löschen von '{file}': {e}")
 
-# Funktion, um Ordner zu löschen
+# function to delete a folder
 def delete_folder(folder_name):
     if os.path.exists(folder_name) and os.path.isdir(folder_name):
         try:
@@ -20,11 +20,10 @@ def delete_folder(folder_name):
         except Exception as e:
             print(f"Fehler beim Löschen von '{folder_name}': {e}")
 
-# Hauptfunktion
 def main():
     print("Lösche Verzeichnisse...")
 
-    # Zu löschende Ordner
+    # this is the list of folders to delete
     folders_to_delete = ["build", "dist", "release"]
     for folder in folders_to_delete:
         delete_folder(folder)
