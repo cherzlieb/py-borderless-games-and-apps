@@ -157,3 +157,4 @@ logs/
 
 # Blacklist file
 blacklist.json
+version.txt
