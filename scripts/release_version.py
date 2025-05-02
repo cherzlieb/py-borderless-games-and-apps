@@ -1,24 +1,44 @@
-import os
+import tomli
+import tomli_w
+from pathlib import Path
 
-# Klasse für die Verwaltung der Versionsnummer
 class VersionManager:
-    def __init__(self, file_path="version.txt"):
-        self.file_path = file_path
+    def __init__(self, toml_path="pyproject.toml"):
+        self.toml_path = toml_path
+        self.version_path = Path(toml_path).parent / "version.txt"
 
     def load_version(self):
-        """Lädt die aktuelle Version aus der Datei oder setzt eine Standardversion."""
-        if os.path.exists(self.file_path):
-            with open(self.file_path, 'r') as file:
-                return file.read().strip()
-        return "0.0.0"  # Standardversion
+        """Load the version from pyproject.toml and version.txt."""
+        if Path(self.toml_path).exists():
+            with open(self.toml_path, "rb") as f:
+                pyproject = tomli.load(f)
+                version = pyproject["project"]["version"]
+                # Also update version.txt
+                self._update_version_txt(version)
+                return version
+        return "0.0.0"
+
+    def _update_version_txt(self, version):
+        """Update the version in version.txt."""
+        with open(self.version_path, "w") as f:
+            f.write(version)
 
     def save_version(self, version):
-        """Speichert die Version in die Datei."""
-        with open(self.file_path, 'w') as file:
-            file.write(version)
+        """Save the version to pyproject.toml and version.txt."""
+        # Speichere in pyproject.toml
+        with open(self.toml_path, "rb") as f:
+            pyproject = tomli.load(f)
+
+        pyproject["project"]["version"] = version
+
+        with open(self.toml_path, "wb") as f:
+            tomli_w.dump(pyproject, f)
+
+        # Save to version.txt
+        self._update_version_txt(version)
 
     def increment_version(self, version, part):
-        """Hochzählen der Version."""
+        """Increment the version based on the specified part."""
         major, minor, patch = map(int, version.split('.'))
 
         part_lower = part.lower()
@@ -38,8 +58,8 @@ class VersionManager:
         return f"{major}.{minor}.{patch}"
 
     def set_version(self, part=None):
-        """Setzt oder erhöht die Version basierend auf der Eingabe."""
+        """Sets or increments the version based on the input."""
         current_version = self.load_version()
         if part:
             return self.increment_version(current_version, part)
-        return current_version  # Behält die alte Version bei
+        return current_version
