@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 import sys
@@ -15,13 +14,13 @@ def create_release():
         root_dir = Path(__file__).parent.parent
         release_dir = root_dir / "Release"
         dist_dir = root_dir / "dist"
-        version_manager = VersionManager("version.txt")
+        version_manager = VersionManager(root_dir / "pyproject.toml")
         current_version = version_manager.load_version()
-        original_version = current_version  # Speichere originale Version
+        original_version = current_version
 
         part = input("Was möchtest du hochzählen? (MAJOR, MINOR, PATCH, leer lassen für keine Änderung): ")
 
-        # Neue Version setzen oder behalten
+        # Set or keep version, depending on user input
         new_version = version_manager.set_version(part if part else None)
         if new_version != current_version:
             version_manager.save_version(new_version)
@@ -34,10 +33,10 @@ def create_release():
         # Clean old release files
         if release_dir.exists():
             if release_dir.is_file():
-                release_dir.unlink()  # Delete if it's a file
+                release_dir.unlink()
             else:
-                shutil.rmtree(release_dir)  # Delete if it's a directory
-        release_dir.mkdir(exist_ok=True)  # Create the release directory
+                shutil.rmtree(release_dir)
+        release_dir.mkdir(exist_ok=True)
 
         if dist_dir.exists():
             shutil.rmtree(dist_dir)
@@ -78,7 +77,7 @@ def create_release():
 
     except Exception as e:
         clear_release_by_error()
-        # Setze Version zurück wenn es einen Fehler gab und die Version geändert wurde
+        # Reset version if there was an error and the version was changed
         if original_version and original_version != current_version:
             version_manager.save_version(original_version)
             print(f"Version wurde auf {original_version} zurückgesetzt")
