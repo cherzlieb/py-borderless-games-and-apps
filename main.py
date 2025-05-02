@@ -196,14 +196,30 @@ class BorderlessWindow:
         self.log(f"Starte Vollbild-Modus für: {selected_text}")
 
         try:
-            # Remove window styles to make it borderless
+            # Remove extended window styles
+            ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+            new_ex_style = ex_style & ~(
+                win32con.WS_EX_DLGMODALFRAME |
+                win32con.WS_EX_COMPOSITED |
+                win32con.WS_EX_WINDOWEDGE |
+                win32con.WS_EX_CLIENTEDGE |
+                win32con.WS_EX_LAYERED |
+                win32con.WS_EX_STATICEDGE |
+                win32con.WS_EX_TOOLWINDOW |
+                win32con.WS_EX_APPWINDOW
+            )
+            win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, new_ex_style)
+
+            # Remove normal window styles (already available)
             style = win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
             new_style = (style & ~(
                 win32con.WS_CAPTION |
                 win32con.WS_THICKFRAME |
                 win32con.WS_MINIMIZE |
                 win32con.WS_MAXIMIZE |
-                win32con.WS_SYSMENU
+                win32con.WS_SYSMENU |
+                win32con.WS_BORDER |
+                win32con.WS_DLGFRAME
             )) | win32con.WS_POPUP
 
             # Important: Set the new style
@@ -221,11 +237,15 @@ class BorderlessWindow:
                 monitor_area[0], monitor_area[1],
                 monitor_area[2] - monitor_area[0],
                 monitor_area[3] - monitor_area[1],
-                win32con.SWP_FRAMECHANGED
+                win32con.SWP_FRAMECHANGED |
+                win32con.SWP_SHOWWINDOW |
+                win32con.SWP_NOACTIVATE
             )
 
             # Force redrawing of the window
+            win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
             win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+            win32gui.UpdateWindow(hwnd)
 
             self.log("Vollbild-Modus wurde erfolgreich angewendet")
 
@@ -237,7 +257,7 @@ class BorderlessWindow:
     def log(self, message):
         """Adds a message to the log text field"""
         self.log_text.insert(tk.END, message + '\n')
-        self.log_text.see(tk.END)  # Scrollt automatisch nach unten
+        self.log_text.see(tk.END)
 
     def clear_log(self):
         """Deletes the content of the log text field"""
