@@ -8,53 +8,47 @@ import os
 import sys
 import win32process
 import psutil
+from src.settings import Settings
 
 class BorderlessWindow:
     def __init__(self):
+        self.settings = Settings()
         self.root = tk.Tk()
 
-        # Read version from version.txt with consideration of the bundle directory
-        bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
-        version_path = os.path.join(bundle_dir, "version.txt")
+        # Use settings
+        window_width = self.settings.get("window", "width")
+        window_height = self.settings.get("window", "height")
+        self.root.geometry(f"{window_width}x{window_height}")
+        self.root.title(self.settings.get("window", "title"))
 
-        try:
-            with open(version_path, "r") as f:
-                version = "v" + f.read().strip()
-        except Exception as e:
-            print(f"Konnte Version nicht laden: {e}")
-            version = ""
-
-        self.root.title(f"Borderless Games and Apps {version}")
-        self.root.geometry("800x600")  # default app size
-
-        self.title_length = 50  # maximum length of the title in the listbox
-        self.root.protocol("WM_DELETE_WINDOW", self.root.quit)
-
-        # Icon path with fallback
-        bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
-        icon_path = os.path.join(bundle_dir, "src", "img", "icon_32.ico")
-        try:
-            self.root.iconbitmap(icon_path)
-        except Exception as e:
-            print(f"Could not load icon: {e}")
-            # Try an alternative path
-            alt_icon_path = os.path.join(os.path.dirname(__file__), "src", "img", "icon_32.ico")
-            try:
-                self.root.iconbitmap(alt_icon_path)
-            except Exception as e:
-                print(f"Could not load alternative icon either: {e}")
+        self.max_title_length = self.settings.get("display", "max_title_length")
 
         # Get own process name and remove .exe
         self.own_process = psutil.Process().name().lower().replace('.exe', '')
 
-        # Load or create blacklist
-        self.blacklist_file = "blacklist.json"
-        self.blacklist = self.load_blacklist()
+        # Use blacklist directly from settings
+        self.blacklist = self.settings.get("blacklist")
 
         # Add own process to blacklist if not already present
         if self.own_process not in (item.lower() for item in self.blacklist):
             self.blacklist.append(self.own_process)
             self.save_blacklist()
+
+        self.root.protocol("WM_DELETE_WINDOW", self.root.quit)
+
+        # Icon path with fallback
+        bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
+        icon_path = os.path.join(bundle_dir, "src", "static", "img", "icon_32.ico")
+        try:
+            self.root.iconbitmap(icon_path)
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+            # Try an alternative path
+            alt_icon_path = os.path.join(os.path.dirname(__file__), "src", "static", "img", "icon_32.ico")
+            try:
+                self.root.iconbitmap(alt_icon_path)
+            except Exception as e:
+                print(f"Could not load alternative icon either: {e}")
 
         # Create notebook for tabs
         notebook = ttk.Notebook(self.root)
@@ -117,17 +111,11 @@ class BorderlessWindow:
         self.update_blacklist_display()
 
     def load_blacklist(self):
-        if os.path.exists(self.blacklist_file):
-            try:
-                with open(self.blacklist_file, 'r') as f:
-                    return json.load(f)
-            except:
-                return []
-        return []
+        return self.settings.get("blacklist")
 
     def save_blacklist(self):
-        with open(self.blacklist_file, 'w') as f:
-            json.dump(self.blacklist, f)
+        self.settings.settings["blacklist"] = self.blacklist
+        self.settings.save_settings()
 
     def update_blacklist_display(self):
         self.blacklist_listbox.delete(0, tk.END)
@@ -180,7 +168,7 @@ class BorderlessWindow:
                         # Check whether the process name is in the blacklist
                         if not any(blocked.lower() == base_name for blocked in self.blacklist):
                             self.windows[title] = hwnd
-                            display_title = title[:self.title_length] + ('...' if len(title) > self.title_length else '')
+                            display_title = title[:self.max_title_length] + ('...' if len(title) > self.max_title_length else '')
                             self.listbox.insert(tk.END, f"{process_name} (Title: {display_title})")
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         pass
