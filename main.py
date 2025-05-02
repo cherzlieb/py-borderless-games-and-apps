@@ -1,63 +1,93 @@
 import win32gui
 import win32con
-import win32api  # Füge diesen Import hinzu
+import win32api
 import tkinter as tk
 from tkinter import ttk
 import json
 import os
+import sys
 import win32process
 import psutil
 
 class BorderlessWindow:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Borderless Games and Apps")
-        self.root.geometry("800x600")  # Größeres Fenster für zusätzliche Elemente
 
-        # Hole eigenen Prozessnamen
-        self.own_process = psutil.Process().name().lower()
+        # Read version from version.txt with consideration of the bundle directory
+        bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
+        version_path = os.path.join(bundle_dir, "version.txt")
 
-        # Lade oder erstelle Blacklist
+        try:
+            with open(version_path, "r") as f:
+                version = "v" + f.read().strip()
+        except Exception as e:
+            print(f"Konnte Version nicht laden: {e}")
+            version = ""
+
+        self.root.title(f"Borderless Games and Apps {version}")
+        self.root.geometry("800x600")  # default app size
+
+        self.title_length = 50  # maximum length of the title in the listbox
+        self.root.protocol("WM_DELETE_WINDOW", self.root.quit)
+
+        # Icon path with fallback
+        bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
+        icon_path = os.path.join(bundle_dir, "src", "img", "icon_32.ico")
+        try:
+            self.root.iconbitmap(icon_path)
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+            # Try an alternative path
+            alt_icon_path = os.path.join(os.path.dirname(__file__), "src", "img", "icon_32.ico")
+            try:
+                self.root.iconbitmap(alt_icon_path)
+            except Exception as e:
+                print(f"Could not load alternative icon either: {e}")
+
+        # Get own process name and remove .exe
+        self.own_process = psutil.Process().name().lower().replace('.exe', '')
+
+        # Load or create blacklist
         self.blacklist_file = "blacklist.json"
         self.blacklist = self.load_blacklist()
 
-        # Füge eigenen Prozess zur Blacklist hinzu
+        # Add own process to blacklist if not already present
         if self.own_process not in (item.lower() for item in self.blacklist):
             self.blacklist.append(self.own_process)
             self.save_blacklist()
 
-        # Erstelle Notebook für Tabs
+        # Create notebook for tabs
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Tab für Hauptfenster
+        # Tab for main window
         main_frame = ttk.Frame(notebook)
         notebook.add(main_frame, text="Hauptfenster")
 
-        # Tab für Blacklist
+        # Tab for blacklist
         blacklist_frame = ttk.Frame(notebook)
         notebook.add(blacklist_frame, text="Ausgeschlossene Apps")
 
-        # Liste für Fenster (im Haupttab)
+        # List for windows (in the main tab)
         self.listbox = tk.Listbox(main_frame)
         self.listbox.pack(fill=tk.BOTH, expand=True)
 
-        # Füge Logging-Textfeld hinzu
+        # Add logging text field
         self.log_text = tk.Text(main_frame, height=5)
         self.log_text.pack(fill=tk.BOTH, padx=5, pady=5)
 
-        # Frame für Hauptbuttons
+        # Frame for main buttons
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # Konfiguriere button_frame für gleichmäßige Verteilung
+        # Configure button_frame for even distribution
         button_frame.columnconfigure(0, weight=1)
         button_frame.columnconfigure(1, weight=0)
         button_frame.columnconfigure(2, weight=0)
         button_frame.columnconfigure(3, weight=0)
         button_frame.columnconfigure(4, weight=1)
 
-        # Buttons im Haupttab
+        # Buttons in the main tab
         refresh_btn = ttk.Button(button_frame, text="Anwendungsliste aktualisieren",
                                command=self.refresh_windows, width=30)
         refresh_btn.grid(row=0, column=1, padx=5)
@@ -70,14 +100,14 @@ class BorderlessWindow:
                                       command=self.add_to_blacklist, width=30)
         add_to_blacklist_btn.grid(row=0, column=3, padx=5)
 
-        # Blacklist-Verwaltung (im Blacklist-Tab)
+        # Blacklist management (in the Blacklist tab)
         self.blacklist_listbox = tk.Listbox(blacklist_frame)
         self.blacklist_listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         blacklist_button_frame = ttk.Frame(blacklist_frame)
         blacklist_button_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # Button zum Entfernen aus der Blacklist
+        # Button to remove from the blacklist
         remove_btn = ttk.Button(blacklist_button_frame, text="Von Blacklist entfernen",
                              command=self.remove_from_blacklist, width=30)
         remove_btn.pack(side=tk.LEFT, padx=5)
@@ -110,8 +140,8 @@ class BorderlessWindow:
             return
 
         title = self.listbox.get(selection[0])
-        # Extrahiere den Prozessnamen aus der Anzeige
-        process_name = title.split('(')[-1].replace(')', '').strip()
+        # Extract the process name from the display (format is now “process_name (Title: display_title)”)
+        process_name = title.split(' (Title:')[0]  # Take everything before “ (Title:”
         base_name = process_name.lower().replace('.exe', '')
 
         if base_name not in (item.lower() for item in self.blacklist):
@@ -140,18 +170,18 @@ class BorderlessWindow:
                 title = win32gui.GetWindowText(hwnd)
                 if title:
                     try:
-                        # Hole Process ID des Fensters
+                        # Get process ID of the window
                         _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                        # Hole Prozessname
-                        process_name = psutil.Process(pid).name()
-                        # Entferne .exe vom Namen
-                        base_name = process_name.lower().replace('.exe', '')
+                        # Get processname
+                        process_name = psutil.Process(pid).name().replace('.exe', '')
+                        # Remove .exe from the name
+                        base_name = process_name.lower()
 
-                        # Prüfe ob der Prozessname in der Blacklist ist
+                        # Check whether the process name is in the blacklist
                         if not any(blocked.lower() == base_name for blocked in self.blacklist):
                             self.windows[title] = hwnd
-                            display_title = title[:30] + ('...' if len(title) > 30 else '')
-                            self.listbox.insert(tk.END, f"{display_title} ({process_name})")
+                            display_title = title[:self.title_length] + ('...' if len(title) > self.title_length else '')
+                            self.listbox.insert(tk.END, f"{process_name} (Title: {display_title})")
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
                         pass
 
@@ -164,7 +194,6 @@ class BorderlessWindow:
             return
 
         selected_text = self.listbox.get(selection[0])
-        # Suche das richtige Fenster basierend auf dem angezeigten Text
         hwnd = None
         for window_title, window_hwnd in self.windows.items():
             display_title = window_title[:30] + ('...' if len(window_title) > 30 else '')
@@ -179,37 +208,37 @@ class BorderlessWindow:
         self.log(f"Starte Vollbild-Modus für: {selected_text}")
 
         try:
-            # Entferne alle Fenster-Styles
+            # Remove window styles to make it borderless
             style = win32gui.GetWindowLong(hwnd, win32con.GWL_STYLE)
             new_style = (style & ~(
                 win32con.WS_CAPTION |
                 win32con.WS_THICKFRAME |
                 win32con.WS_MINIMIZE |
                 win32con.WS_MAXIMIZE |
-                win32con.WS_SYSMENU |
-                win32con.WS_BORDER |
-                win32con.WS_DLGFRAME |
-                win32con.WS_OVERLAPPED
+                win32con.WS_SYSMENU
             )) | win32con.WS_POPUP
 
-            # Hole Monitor-Informationen (geändert von win32gui zu win32api)
+            # Important: Set the new style
+            win32gui.SetWindowLong(hwnd, win32con.GWL_STYLE, new_style)
+
+            # Get monitor information
             monitor = win32api.MonitorFromWindow(hwnd, win32con.MONITOR_DEFAULTTONEAREST)
             monitor_info = win32api.GetMonitorInfo(monitor)
             monitor_area = monitor_info['Monitor']
 
-            self.log(f"Monitor-Bereich: {monitor_area}")
-
-            # Setze Fenster auf volle Monitorgröße
+            # Set the position
             win32gui.SetWindowPos(
                 hwnd,
                 win32con.HWND_TOP,
                 monitor_area[0], monitor_area[1],
                 monitor_area[2] - monitor_area[0],
                 monitor_area[3] - monitor_area[1],
-                win32con.SWP_FRAMECHANGED | win32con.SWP_SHOWWINDOW
+                win32con.SWP_FRAMECHANGED
             )
 
-            self.log("Fensterposition wurde angepasst")
+            # Force redrawing of the window
+            win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+
             self.log("Vollbild-Modus wurde erfolgreich angewendet")
 
         except Exception as e:
@@ -218,12 +247,12 @@ class BorderlessWindow:
             self.log(traceback.format_exc())
 
     def log(self, message):
-        """Fügt eine Nachricht zum Log-Textfeld hinzu"""
+        """Adds a message to the log text field"""
         self.log_text.insert(tk.END, message + '\n')
         self.log_text.see(tk.END)  # Scrollt automatisch nach unten
 
     def clear_log(self):
-        """Löscht den Inhalt des Log-Textfelds"""
+        """Deletes the content of the log text field"""
         self.log_text.delete(1.0, tk.END)
 
 if __name__ == "__main__":
