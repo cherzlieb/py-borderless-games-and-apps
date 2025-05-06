@@ -1,5 +1,7 @@
 # Borderless Games and Apps
 
+[![Release](https://img.shields.io/github/v/release/cherzlieb/py-borderless-games-and-apps)](https://github.com/cherzlieb/py-borderless-games-and-apps/releases)
+
 A simple tool to make any window borderless. Perfect for games and applications that don't support borderless windowed mode natively.
 
 ## Features
