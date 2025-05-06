@@ -10,4 +10,5 @@ dependencies = [
     "pywin32>=310",
     "tomli>=2.0.1",
     "tomli-w>=1.0.0",
+    "ttkbootstrap>=1.12.2",
 ]
