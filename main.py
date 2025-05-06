@@ -89,15 +89,15 @@ class BorderlessWindow:
 
         # Buttons in the main tab
         refresh_btn = ttk.Button(button_frame, text="Anwendungsliste aktualisieren",
-                               command=self.refresh_windows, width=30)
+                               command=self.refresh_windows, width=37)
         refresh_btn.grid(row=0, column=1, padx=5)
 
         borderless_btn = ttk.Button(button_frame, text="Vollbild Fenstermodus anwenden",
-                                  command=self.make_borderless, width=30)
+                                  command=self.make_borderless, width=37)
         borderless_btn.grid(row=0, column=2, padx=5)
 
         add_to_blacklist_btn = ttk.Button(button_frame, text="Zur Blacklist hinzufügen",
-                                      command=self.add_to_blacklist, width=30)
+                                      command=self.add_to_blacklist, width=37)
         add_to_blacklist_btn.grid(row=0, column=3, padx=5)
 
         # Blacklist management (in the Blacklist tab)
@@ -109,8 +109,8 @@ class BorderlessWindow:
 
         # Button to remove from the blacklist
         remove_btn = ttk.Button(blacklist_button_frame, text="Von Blacklist entfernen",
-                             command=self.remove_from_blacklist, width=30)
-        remove_btn.pack(side=tk.LEFT, padx=5)
+                             command=self.remove_from_blacklist)
+        remove_btn.pack(fill=tk.X, padx=5)
 
         # Add menu bar
         self.menubar = tk.Menu(self.root)
