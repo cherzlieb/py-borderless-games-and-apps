@@ -1,6 +1,6 @@
 [project]
 name = "py-borderless-games-and-apps"
-version = "0.3.0"
+version = "0.3.1"
 description = "A simple tool to make any window borderless. Perfect for games and applications that don't support borderless windowed mode natively."
 readme = "README.md"
 requires-python = ">=3.13"

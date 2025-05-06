@@ -184,6 +184,9 @@ class BorderlessWindow:
         self.refresh_windows()
         self.update_blacklist_display()
 
+        # Schedule update check after 5 seconds
+        self.root.after(5000, self.check_for_updates)
+
     def load_blacklist(self):
         return self.settings.get("blacklist")
 
@@ -369,7 +372,6 @@ Möchten Sie das Update jetzt installieren?"""
 
                     if os.path.exists(updater_path):
                         self.log(f"Starte Update-Prozess...")
-                        # Starte Updater im Silent-Modus
                         subprocess.Popen([updater_path, "--silent", "--auto-install"])
                         self.root.quit()
                     else:
@@ -383,7 +385,6 @@ Möchten Sie das Update jetzt installieren?"""
                     messagebox.showerror("Fehler", error_msg)
                 else:
                     self.log("Sie verwenden bereits die neueste Version.")
-                    messagebox.showinfo("Keine Updates", "Sie verwenden bereits die neueste Version.")
 
         except Exception as e:
             error_msg = f"Fehler beim Update-Check: {str(e)}"
