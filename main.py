@@ -1,19 +1,25 @@
+import os
+import sys
+import psutil
+import json
 import win32gui
 import win32con
 import win32api
-import tkinter as tk
-from tkinter import ttk
-import json
-import os
-import sys
 import win32process
-import psutil
+import tkinter as tk
+from ttkbootstrap import ttk
+from ttkbootstrap import Style
+from ttkbootstrap.constants import *
 from src.settings import Settings
 
 class BorderlessWindow:
     def __init__(self):
         self.settings = Settings()
         self.root = tk.Tk()
+
+        # Get theme from settings
+        current_theme = self.settings.get("window", "active_theme")
+        self.style = Style(theme=current_theme)
 
         # Use settings
         window_width = self.settings.get("window", "width")
@@ -63,12 +69,12 @@ class BorderlessWindow:
         notebook.add(blacklist_frame, text="Ausgeschlossene Apps")
 
         # List for windows (in the main tab)
-        self.listbox = tk.Listbox(main_frame)
+        self.listbox = tk.Listbox(main_frame, borderwidth=8, selectborderwidth=1)
         self.listbox.pack(fill=tk.BOTH, expand=True)
 
         # Add logging text field
         self.log_text = tk.Text(main_frame, height=5)
-        self.log_text.pack(fill=tk.BOTH, padx=5, pady=5)
+        self.log_text.pack(fill=tk.BOTH)
 
         # Frame for main buttons
         button_frame = ttk.Frame(main_frame)
@@ -95,8 +101,8 @@ class BorderlessWindow:
         add_to_blacklist_btn.grid(row=0, column=3, padx=5)
 
         # Blacklist management (in the Blacklist tab)
-        self.blacklist_listbox = tk.Listbox(blacklist_frame)
-        self.blacklist_listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.blacklist_listbox = tk.Listbox(blacklist_frame, borderwidth=8, selectborderwidth=1)
+        self.blacklist_listbox.pack(fill=tk.BOTH, expand=True)
 
         blacklist_button_frame = ttk.Frame(blacklist_frame)
         blacklist_button_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -105,6 +111,65 @@ class BorderlessWindow:
         remove_btn = ttk.Button(blacklist_button_frame, text="Von Blacklist entfernen",
                              command=self.remove_from_blacklist, width=30)
         remove_btn.pack(side=tk.LEFT, padx=5)
+
+        # Add menu bar
+        self.menubar = tk.Menu(self.root)
+        self.root.config(menu=self.menubar)
+
+        # Create Theme menu
+        self.theme_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Theme", menu=self.theme_menu)
+
+        # All available ttkbootstrap themes
+        self.light_themes = [
+            'cosmo', 'flatly', 'journal', 'litera', 'lumen',
+            'minty', 'pulse', 'sandstone', 'united', 'yeti',
+            'morph', 'simplex', 'cerculean'
+        ]
+
+        self.dark_themes = [
+            'darkly', 'solar', 'superhero', 'cyborg', 'vapor'
+        ]
+
+        # Create a single StringVar for all theme radio buttons
+        self.theme_var = tk.StringVar(value=current_theme)
+
+        # Light Themes header - with disabled hover effect
+        self.theme_menu.add_command(
+            label="Light Themes",
+            state="disabled",
+            activebackground=self.theme_menu.cget("background"),
+            activeforeground=self.theme_menu.cget("background")
+        )
+
+        # Add light theme options with indentation
+        for theme in sorted(self.light_themes):
+            self.theme_menu.add_radiobutton(
+                label="    " + theme,
+                variable=self.theme_var,
+                value=theme,
+                command=lambda t=theme: self.change_theme(t)
+            )
+
+        # Add separator
+        self.theme_menu.add_separator()
+
+        # Dark Themes header - with disabled hover effect
+        self.theme_menu.add_command(
+            label="Dark Themes",
+            state="disabled",
+            activebackground=self.theme_menu.cget("background"),
+            activeforeground=self.theme_menu.cget("background")
+        )
+
+        # Add dark theme options with indentation
+        for theme in sorted(self.dark_themes):
+            self.theme_menu.add_radiobutton(
+                label="    " + theme,
+                variable=self.theme_var,
+                value=theme,
+                command=lambda t=theme: self.change_theme(t)
+            )
 
         self.windows = {}
         self.refresh_windows()
@@ -262,6 +327,14 @@ class BorderlessWindow:
     def clear_log(self):
         """Deletes the content of the log text field"""
         self.log_text.delete(1.0, tk.END)
+
+    def change_theme(self, theme_name):
+        """Change the application theme and save it to settings"""
+        self.style.theme_use(theme_name)
+
+        # Save theme to settings
+        self.settings.settings["window"]["active_theme"] = theme_name
+        self.settings.save_settings()
 
 if __name__ == "__main__":
     app = BorderlessWindow()
