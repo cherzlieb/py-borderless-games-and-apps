@@ -8,7 +8,7 @@ from clear_release_by_error import main as clear_release_by_error
 
 def create_release():
     """Create a release package."""
-    original_version = None
+    original_version = ""
     try:
         # Setup paths
         root_dir = Path(__file__).parent.parent
@@ -21,7 +21,7 @@ def create_release():
         part = input("Was möchtest du hochzählen? (MAJOR, MINOR, PATCH, leer lassen für keine Änderung): ")
 
         # Set or keep version, depending on user input
-        new_version = version_manager.set_version(part if part else None)
+        new_version = version_manager.set_version(part if part else "")
         if new_version != current_version:
             version_manager.save_version(new_version)
             current_version = version_manager.load_version()
@@ -47,10 +47,12 @@ def create_release():
         subprocess.run([sys.executable, str(build_script)], check=True)
 
         # Copy files to release directory
-        if dist_dir.exists() and (dist_dir / "Borderless-Games-and-Apps.exe").exists():
+        if dist_dir.exists():
             print("Copying files to release directory...")
-            # Copy executable
+            # Copy main executable
             shutil.copy2(dist_dir / "Borderless-Games-and-Apps.exe", release_dir)
+            # Copy updater executable
+            shutil.copy2(dist_dir / "updater.exe", release_dir)
 
             # Create ZIP file in Release directory
             zip_path = release_dir / f"{zip_name}.zip"
