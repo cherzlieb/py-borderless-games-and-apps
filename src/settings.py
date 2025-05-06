@@ -16,10 +16,11 @@ class Settings:
         "window": {
             "width": 800,
             "height": 600,
-            "title": f"Borderless Games and Apps {_get_version()}"
+            "title": f"Borderless Games and Apps {_get_version()}",
+            "active_theme": "darkly"
         },
         "display": {
-            "max_title_length": 50
+            "max_title_length": 100
         },
         "blacklist": []
     }
