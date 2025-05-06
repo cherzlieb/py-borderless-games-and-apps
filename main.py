@@ -2,15 +2,18 @@ import os
 import sys
 import psutil
 import json
+import subprocess
 import win32gui
 import win32con
 import win32api
 import win32process
 import tkinter as tk
+import tkinter.messagebox as messagebox
 from ttkbootstrap import ttk
 from ttkbootstrap import Style
 from ttkbootstrap.constants import *
-from src.settings import Settings
+from src.utils.settings import Settings
+from src.utils.updater import Updater
 
 class BorderlessWindow:
     def __init__(self):
@@ -25,7 +28,8 @@ class BorderlessWindow:
         window_width = self.settings.get("window", "width")
         window_height = self.settings.get("window", "height")
         self.root.geometry(f"{window_width}x{window_height}")
-        self.root.title(self.settings.get("window", "title"))
+        version = self.settings.get("window", "version")
+        self.root.title("Borderless Game and Apps" + (f" {version}" if version else ""))
 
         self.max_title_length = self.settings.get("display", "max_title_length")
 
@@ -119,6 +123,11 @@ class BorderlessWindow:
         # Create Theme menu
         self.theme_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Theme", menu=self.theme_menu)
+
+        # Add Help menu with update check
+        help_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Hilfe", menu=help_menu)
+        help_menu.add_command(label="Nach Updates suchen", command=self.check_for_updates)
 
         # All available ttkbootstrap themes
         self.light_themes = [
@@ -335,6 +344,51 @@ class BorderlessWindow:
         # Save theme to settings
         self.settings.settings["window"]["active_theme"] = theme_name
         self.settings.save_settings()
+
+    def check_for_updates(self):
+        """Check for updates and prompt user to install if available"""
+        self.log("Suche nach Updates...")
+        try:
+            updater = Updater()
+            update_info = updater.check_for_updates()
+
+            if update_info.get("available"):
+                message = f"""Eine neue Version ist verfügbar!
+Aktuelle Version: {updater.current_version}
+Neue Version: {update_info['version']}
+
+{update_info.get('description', 'Keine Beschreibung verfügbar')}
+
+Möchten Sie das Update jetzt installieren?"""
+
+                if messagebox.askyesno("Update verfügbar", message):
+                    if hasattr(sys, '_MEIPASS'):
+                        updater_path = os.path.join(os.path.dirname(sys.executable), "updater.exe")
+                    else:
+                        updater_path = os.path.join(os.path.dirname(__file__), "dist", "updater.exe")
+
+                    if os.path.exists(updater_path):
+                        self.log(f"Starte Update-Prozess...")
+                        # Starte Updater im Silent-Modus
+                        subprocess.Popen([updater_path, "--silent", "--auto-install"])
+                        self.root.quit()
+                    else:
+                        error_msg = f"Updater nicht gefunden in: {updater_path}"
+                        self.log(error_msg)
+                        messagebox.showerror("Fehler", error_msg)
+            else:
+                if "error" in update_info:
+                    error_msg = f"Fehler beim Prüfen auf Updates: {update_info['error']}"
+                    self.log(error_msg)
+                    messagebox.showerror("Fehler", error_msg)
+                else:
+                    self.log("Sie verwenden bereits die neueste Version.")
+                    messagebox.showinfo("Keine Updates", "Sie verwenden bereits die neueste Version.")
+
+        except Exception as e:
+            error_msg = f"Fehler beim Update-Check: {str(e)}"
+            self.log(error_msg)
+            messagebox.showerror("Fehler", error_msg)
 
 if __name__ == "__main__":
     app = BorderlessWindow()
