@@ -2,21 +2,11 @@ import json
 import os
 
 class Settings:
-    @staticmethod
-    def _get_version():
-        try:
-            version_file = os.path.join(os.path.dirname(__file__), "..", "version.txt")
-            with open(version_file, 'r') as f:
-                return "v" + f.read().strip()
-        except Exception:
-            return "v0.0.0"  # Fallback version
-
     # Default values wenn keine settings.json existiert
     DEFAULT_SETTINGS = {
         "window": {
             "width": 800,
             "height": 600,
-            "title": f"Borderless Games and Apps {_get_version()}",
             "active_theme": "darkly"
         },
         "display": {
